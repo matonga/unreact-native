@@ -97,3 +97,13 @@ Receives an unreact element and returns a React Native component.
 * Make a tool to generate propNames list from .d.ts files / autgenerate .tsx files to import components.
 * Test with Fabric.
 * Test with Xcode (only tested with Android up to now)
+
+## Not pending
+
+* HTML5 compatibility
+* HTML5 DOM rendering
+* ...anything related to HTML
+
+This is not a WebView or HTML browser. If you need to write an HTML + CSS + JS app please use [CapacitorJS](https://capacitorjs.com/).
+
+If you love React Native but hate React, then this library is for you.
