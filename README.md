@@ -1,5 +1,5 @@
 # unreact-native
-React Native minus the React part
+[React Native](https://reactnative.dev/) minus the React part
 
 ## Usage
 
@@ -96,7 +96,9 @@ Receives an unreact element and returns a React Native component.
 
 * Make a tool to generate propNames list from .d.ts files / autgenerate .tsx files to import components.
 * Test with Fabric.
-* Test with Xcode (only tested with Android up to now)
+* Test with Xcode (only tested with Android up to now).
+* Test with [React Native for Web](https://necolas.github.io/react-native-web/).
+* Write better documentation.
 
 ## Not pending
 
