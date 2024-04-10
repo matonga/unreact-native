@@ -78,10 +78,10 @@ The factory function returns an instance of an Unreact Component with getter and
 
 Method | Parameters | Description
 --- | --- | ---
-appendChild | child | -
-removeChild | child | -
-insertBefore | newChild, referenceChild | -
-replaceChildren | child1, child2, ... | -
+appendChild | child : UnreactComponent | Append child to this component, after all other children. If it was already a child it is removed first then added after all other children.
+removeChild | child : UnreactComponent | Remove child from this component. If child is not a child nothing happens.
+insertBefore | newChild : UnreactComponent, referenceChild : UnreactComponent | Insert newChild before referenceChild. If newChild is already a child it is removed first then added before referenceChild. If referenceChild is not a child nothing happens.
+replaceChildren | child1 : UnreactComponent, child2 : UnreactComponent, ... | Removes all current children, then adds new children. You can supply 0 parameters then all existing childs are removed.
 
 The style prop will be handled specially, by means of a Proxy instance. Styles are immutable, but the Proxy instance allows code such as:
 
