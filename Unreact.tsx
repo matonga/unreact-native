@@ -8,7 +8,7 @@
 import React, { useState } from 'react';
 
 function gen_random_uuid () : string {
-	let buffer = [ ];
+	let buffer : (string | (number[])) = [ ];
 	for (let i=0; i<16; i++) {
 		buffer.push ((Math.random()*256) | 0);
 	}
@@ -23,11 +23,11 @@ function gen_random_uuid () : string {
 let updateUI = () => { };
 
 const UnreactStyleProxy = {
-	get (target, prop) {
+	get (target : any, prop : string) {
 		// esto funciona y me devuelve el valor correcto (testeado con console.log (rect.style.backgroundColor) ✓)
 		return target.getProps().style?.[prop];
 	},
-	set (target, prop, value) {
+	set (target : any, prop : string, value : any) {
 		// esto rompe la app, se cierra inmediatamente, buscando bug...
 		let props = target.getProps();
 		let style = props.style || { };
@@ -39,66 +39,84 @@ const UnreactStyleProxy = {
 	}
 };
 
-function Unreact (
+interface UnreactComponent {
+	appendChild (child : UnreactComponent | string) : void;
+	removeChild (child : UnreactComponent | string) : void;
+	insertBefore (newChild : UnreactComponent | string, referenceChild : UnreactComponent | string) : void;
+	replaceChildren (...newChildren : (UnreactComponent | string)[]) : void;
+}
+
+interface UnreactComponentInternals extends UnreactComponent {
+	name : string;
+	parentElement : UnreactComponent | null;
+	render () : React.JSX.Element;
+	renderChildren () : (string | React.JSX.Element)[];
+	getProps () : any;
+	setProps (newProps : any) : void;
+}
+
+function Unreact<PropsType> (
 	name : string,
 	render : (props : any, children: any) => React.JSX.Element,
 	propNames : string[] = [ ]
 ) {
-	let helper = function (props : any = { }) {
+	let helper = function (props : any = { }) : (UnreactComponent & PropsType) {
 		let key = gen_random_uuid ();
-		let children = [ ];
-		this.name = name;
-		this.renderChildren = () => children.map (child => (typeof child == 'string') ? child : child.render ());
-		this.render = () : React.JSX.Element => {
-			return render ({ key, ...props }, this.renderChildren ());
-		};
-		this.getProps = () => props;
-		this.setProps = newProps => {
-			props = newProps;
-			updateUI ();
-		}
-		this.appendChild = function (child) {
-			let index = children.indexOf (child);
-			if (index >= 0) {
+		let children : (UnreactComponent | string)[] = [ ];
+		let self : UnreactComponentInternals = {
+			name,
+			parentElement : null,
+			renderChildren: () => children.map (child => (typeof child == 'string') ? child : (child as UnreactComponentInternals).render ()),
+			render: () : React.JSX.Element => {
+				return render ({ key, ...props }, self.renderChildren ());
+			},
+			getProps: () : any => props,
+			setProps: (newProps : any) : void => {
+				props = newProps;
+				updateUI ();
+			},
+			appendChild: function (child : UnreactComponent) {
+				let index = children.indexOf (child);
+				if (index >= 0) {
+					children.splice (index, 1);
+				}
+				children.push (child);
+				(child as UnreactComponentInternals).parentElement = self;
+				updateUI ();
+			},
+			removeChild: function (child : UnreactComponent) {
+				let index = children.indexOf (child);
+				if (index == -1) {
+					return;
+				}
 				children.splice (index, 1);
+				(child as UnreactComponentInternals).parentElement = null;
+				updateUI ();
+			},
+			insertBefore: function (newChild : UnreactComponent, referenceChild : UnreactComponent) {
+				let index = children.indexOf (referenceChild);
+				if (index == -1) {
+					return;
+				}
+				children.splice (index, 0, newChild);
+				(newChild as UnreactComponentInternals).parentElement = self;
+				updateUI ();
+			},
+			replaceChildren: function (...newChildren : UnreactComponent[]) {
+				for (let child of children) {
+					(child as UnreactComponentInternals).parentElement = null;
+				}
+				children = Array.from (newChildren);
+				for (let child of children) {
+					(child as UnreactComponentInternals).parentElement = self;
+				}
+				updateUI ();
 			}
-			children.push (child);
-			child.parentElement = this;
-			updateUI ();
-		}
-		this.removeChild = function (child) {
-			let index = children.indexOf (child);
-			if (index == -1) {
-				return;
-			}
-			children.splice (index, 1);
-			child.parentElement = null;
-			updateUI ();
-		}
-		this.insertBefore = function (newChild, referenceChild) {
-			let index = children.indexOf (referenceChild);
-			if (index == -1) {
-				return;
-			}
-			children.splice (index, 0, newChild);
-			newChild.parentElement = this;
-			updateUI ();
-		};
-		this.replaceChildren = function (...newChildren) {
-			for (let child of children) {
-				child.parentElement = null;
-			}
-			children = Array.from (newChildren);
-			for (let child of children) {
-				child.parentElement = this;
-			}
-			updateUI ();
 		};
 		for (let name of propNames) {
 			if (name == 'style') {
-				let styleProxy;
-				styleProxy = new Proxy (this, UnreactStyleProxy);
-				Object.defineProperty (this, name, {
+				let styleProxy = new Proxy (self, UnreactStyleProxy);
+				Object.defineProperty (self, name, {
 					get () {
 						return styleProxy;
 					},
@@ -109,7 +127,7 @@ function Unreact (
 				});
 				continue;
 			}
-			Object.defineProperty (this, name, {
+			Object.defineProperty (self, name, {
 				get () {
 					return props[name];
 				},
@@ -119,15 +137,17 @@ function Unreact (
 				}
 			});
 		}
+		return self;
 	};
 	helper.name = name;
 	return helper;
 }
 
-function UnreactApp (root) {
+function UnreactApp (root : UnreactComponent) {
 	let [ x, setX ] = useState (0);
 	updateUI = () => setX (x + 1);
-	return root.render ();
+	return (root as UnreactComponentInternals).render ();
 }
 
+export type { UnreactComponent };
 export { Unreact, UnreactApp };
