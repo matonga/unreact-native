@@ -88,10 +88,7 @@ function Unreact<PropsType> (
 				updateUI ();
 			},
 			appendChild: function (child : UnreactComponent) {
-				let index = children.indexOf (child);
-				if (index >= 0) {
-					children.splice (index, 1);
-				}
+				(child as UnreactComponentInternals).parentElement?.removeChild (child);
 				children.push (child);
 				(child as UnreactComponentInternals).parentElement = self;
 				updateUI ();
@@ -110,10 +107,7 @@ function Unreact<PropsType> (
 				if (index == -1) {
 					return;
 				}
-				let check = children.indexOf (newChild);
-				if (check >= 0) {
-					children.splice (check, 1);
-				}
+				(newChild as UnreactComponentInternals).parentElement?.removeChild (newChild);
 				children.splice (index, 0, newChild);
 				(newChild as UnreactComponentInternals).parentElement = self;
 				updateUI ();
