@@ -98,6 +98,10 @@ function Unreact<PropsType> (
 				if (index == -1) {
 					return;
 				}
+				let check = children.indexOf (newChild);
+				if (check >= 0) {
+					children.splice (check, 1);
+				}
 				children.splice (index, 0, newChild);
 				(newChild as UnreactComponentInternals).parentElement = self;
 				updateUI ();
