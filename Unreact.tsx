@@ -46,7 +46,10 @@ interface UnreactComponent {
 	replaceChildren (...newChildren : (UnreactComponent | string)[]) : void;
 }
 
+const isUnreactComponent = Symbol();
+
 interface UnreactComponentInternals extends UnreactComponent {
+	[isUnreactComponent] : boolean;
 	name : string;
 	parentElement : UnreactComponent | null;
 	render () : React.JSX.Element;
@@ -64,11 +67,20 @@ function Unreact<PropsType> (
 		let key = gen_random_uuid ();
 		let children : (UnreactComponent | string)[] = [ ];
 		let self : UnreactComponentInternals = {
+			[isUnreactComponent] : true,
 			name,
 			parentElement : null,
 			renderChildren: () => children.map (child => (typeof child == 'string') ? child : (child as UnreactComponentInternals).render ()),
 			render: () : React.JSX.Element => {
-				return render ({ key, ...props }, self.renderChildren ());
+				let newProps : any = { };
+				for (let key in props) {
+					if (props[key][isUnreactComponent]) {
+						newProps[key] = props[key].render ();
+					} else {
+						newProps[key] = props[key];
+					}
+				}
+				return render ({ key, ...newProps }, self.renderChildren ());
 			},
 			getProps: () : any => props,
 			setProps: (newProps : any) : void => {
